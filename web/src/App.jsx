@@ -516,12 +516,6 @@ export default function App() {
                 <button className="date-nav-btn" onClick={handleNextDay} title="Ngày sau">
                   <ChevronRight size={20} />
                 </button>
-
-                {!isSelectedDateToday && (
-                  <button className="today-jump-btn" onClick={handleJumpToToday}>
-                    Hôm nay
-                  </button>
-                )}
               </div>
 
               {/* TỔNG CHI TIÊU CỦA NGÀY ĐANG CHỌN */}
@@ -601,14 +595,6 @@ export default function App() {
                       </div>
                     );
                   })}
-
-                  <button
-                    className="manage-btn"
-                    style={{ marginTop: '14px', backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', color: '#065F46' }}
-                    onClick={() => handleOpenAddForDate(selectedDate)}
-                  >
-                    <Plus size={16} /> Thêm khoản chi khác cho ngày {formatDisplayDate(selectedDate)}
-                  </button>
                 </div>
               )}
             </div>
