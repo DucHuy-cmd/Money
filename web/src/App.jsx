@@ -83,7 +83,7 @@ export default function App() {
 
   // UI state
   const [activeTab, setActiveTab] = useState('day'); // 'day' | 'all'
-  const [fixedExpanded, setFixedExpanded] = useState(true);
+  const [fixedExpanded, setFixedExpanded] = useState(false);
 
   // Form states for Add Expense
   const [selectedCat, setSelectedCat] = useState(FLEXIBLE_CATEGORIES[0]);
@@ -688,17 +688,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Chọn ngày chi */}
-            <div className="input-group">
-              <label className="input-label">Ngày chi tiêu</label>
-              <input
-                type="date"
-                className="text-input"
-                value={expenseDate}
-                onChange={(e) => setExpenseDate(e.target.value)}
-              />
-            </div>
-
             {/* Ô điền số tiền màu trắng */}
             <div className="input-group">
               <label className="input-label">Số tiền chi (VNĐ)</label>
@@ -956,38 +945,31 @@ export default function App() {
             </button>
           </div>
 
-          <div style={{ padding: '10px 16px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: '8px', overflowX: 'auto' }}>
-            {historyMonths.map((mKey) => (
-              <button
-                key={mKey}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '16px',
-                  border: 'none',
-                  backgroundColor: mKey === selectedHistoryMonth ? '#10B981' : '#FFFFFF',
-                  color: mKey === selectedHistoryMonth ? '#FFFFFF' : '#475569',
-                  border: mKey === selectedHistoryMonth ? 'none' : '1px solid #CBD5E1',
-                  fontWeight: '600',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-                onClick={() => {
-                  setSelectedHistoryMonth(mKey);
-                  setHistoryDetails(getMonthData(mKey));
-                }}
-              >
-                {formatMonthTitle(mKey)} {mKey === currentMonthKey ? '(Hiện tại)' : ''}
-              </button>
-            ))}
-          </div>
-
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {historyDetails ? (
               <>
                 <div className="card">
-                  <div style={{ fontSize: '18px', fontWeight: '800', marginBottom: '10px' }}>
-                    {formatMonthTitle(selectedHistoryMonth)}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '18px', fontWeight: '800' }}>
+                      {formatMonthTitle(selectedHistoryMonth)}
+                    </div>
+                    {historyMonths.length > 1 && (
+                      <select
+                        className="text-input"
+                        style={{ width: 'auto', padding: '6px 12px', fontSize: '13px', fontWeight: '700' }}
+                        value={selectedHistoryMonth}
+                        onChange={(e) => {
+                          setSelectedHistoryMonth(e.target.value);
+                          setHistoryDetails(getMonthData(e.target.value));
+                        }}
+                      >
+                        {historyMonths.map((mKey) => (
+                          <option key={mKey} value={mKey}>
+                            {formatMonthTitle(mKey)} {mKey === currentMonthKey ? '(Hiện tại)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', padding: '10px', borderRadius: '8px' }}>

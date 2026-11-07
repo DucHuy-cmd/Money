@@ -711,28 +711,42 @@ input, textarea, select {
 .amount-input-box {
   display: flex;
   align-items: center;
+  justify-content: center;
   background-color: #FFFFFF !important;
-  border: 2px solid #CBD5E1;
-  border-radius: 14px;
-  padding: 10px 16px;
+  border: 2px solid #CBD5E1 !important;
+  border-radius: 16px !important;
+  padding: 10px 16px !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 .amount-input-box input {
   flex: 1;
+  min-width: 0 !important;
+  width: 100% !important;
   font-size: 28px;
   font-weight: 800;
   color: #0F172A !important;
-  background-color: #FFFFFF !important;
-  border: none;
-  outline: none;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
   text-align: center;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
 }
 
 .amount-currency {
   font-size: 20px;
   font-weight: 700;
   color: #10B981;
+  margin-left: 8px;
+  flex-shrink: 0;
 }
 
 .quick-pills {

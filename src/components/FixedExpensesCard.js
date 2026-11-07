@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatCurrency } from '../utils/format';
 
 export default function FixedExpensesCard({ fixedExpenses = [], onTogglePaid, onManageFixed }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const paidCount = fixedExpenses.filter((item) => item.paid).length;
   const totalCount = fixedExpenses.length;
