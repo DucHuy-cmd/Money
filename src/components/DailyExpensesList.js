@@ -140,7 +140,7 @@ export default function DailyExpensesList({
           ) : (
             <View>
               <View style={styles.todaySubtotal}>
-                <Text style={styles.todaySubtotalLabel}>Tổng chi hôm nay:</Text>
+                <Text style={styles.todaySubtotalLabel}>TỔNG CHI:</Text>
                 <Text style={styles.todaySubtotalValue}>{formatCurrency(totalToday)}</Text>
               </View>
 

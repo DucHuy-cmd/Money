@@ -520,7 +520,7 @@ export default function App() {
 
               {/* TỔNG CHI TIÊU CỦA NGÀY ĐANG CHỌN */}
               <div className="day-subtotal-box">
-                <span className="day-subtotal-label">Tổng chi ngày {formatDisplayDate(selectedDate)}:</span>
+                <span className="day-subtotal-label" style={{ fontWeight: '800', letterSpacing: '0.5px' }}>TỔNG CHI:</span>
                 <span className="day-subtotal-val" style={{ color: selectedDateTotal > 0 ? '#EF4444' : '#10B981' }}>
                   {formatCurrency(selectedDateTotal)}
                 </span>
