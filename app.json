@@ -10,6 +10,16 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.duchuy.quanlychitieu"
     },
+    "androidStatusBar": {
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content",
+      "translucent": false
+    },
+    "androidNavigationBar": {
+      "visible": "always",
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content"
+    },
     "android": {
       "package": "com.duchuy.quanlychitieu",
       "adaptiveIcon": {
