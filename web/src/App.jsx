@@ -21,6 +21,8 @@ import {
   MoreHorizontal,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 import './App.css';
@@ -33,6 +35,8 @@ import {
   getTodayDateString,
   formatDisplayDate,
   getCurrentTimeString,
+  addDays,
+  formatDateFullVietnamese,
 } from './utils';
 import {
   DEFAULT_FIXED_PRESETS,
@@ -53,7 +57,6 @@ import {
   saveSettings,
 } from './storage';
 import {
-  requestNotificationPermission,
   sendNotification,
   testNotification,
 } from './notifications';
@@ -63,6 +66,9 @@ export default function App() {
   const [monthData, setMonthData] = useState(null);
   const [settings, setSettings] = useState(getSettings());
   const [previousMonthData, setPreviousMonthData] = useState(null);
+
+  // Date selection state
+  const [selectedDate, setSelectedDate] = useState(getTodayDateString());
 
   // PWA install prompt
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -76,13 +82,14 @@ export default function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // UI state
-  const [activeTab, setActiveTab] = useState('today'); // 'today' | 'all'
+  const [activeTab, setActiveTab] = useState('day'); // 'day' | 'all'
   const [fixedExpanded, setFixedExpanded] = useState(true);
 
   // Form states for Add Expense
   const [selectedCat, setSelectedCat] = useState(FLEXIBLE_CATEGORIES[0]);
   const [expenseAmountStr, setExpenseAmountStr] = useState('');
   const [expenseNote, setExpenseNote] = useState('');
+  const [expenseDate, setExpenseDate] = useState(getTodayDateString());
 
   // Form states for Setup
   const [setupBudgetStr, setSetupBudgetStr] = useState('');
@@ -165,6 +172,15 @@ export default function App() {
     setDeferredPrompt(null);
   };
 
+  // Open add modal prepopulated with currently selected date
+  const handleOpenAddForDate = (targetDate = selectedDate) => {
+    setExpenseDate(targetDate);
+    setExpenseAmountStr('');
+    setExpenseNote('');
+    setSelectedCat(FLEXIBLE_CATEGORIES[0]);
+    setShowAddModal(true);
+  };
+
   // Add Expense
   const handleSaveExpense = () => {
     const num = parseNumber(expenseAmountStr);
@@ -173,18 +189,19 @@ export default function App() {
       return;
     }
 
-    const { updatedData } = addDailyExpense(currentMonthKey, {
+    const targetMonth = getMonthKey(expenseDate);
+    const { updatedData } = addDailyExpense(targetMonth, {
       categoryId: selectedCat.id,
       categoryName: selectedCat.name,
       amount: num,
       note: expenseNote.trim(),
-      date: getTodayDateString(),
+      date: expenseDate || selectedDate,
       time: getCurrentTimeString(),
     });
 
-    setMonthData(updatedData);
-    setExpenseAmountStr('');
-    setExpenseNote('');
+    if (targetMonth === currentMonthKey) {
+      setMonthData(updatedData);
+    }
     setShowAddModal(false);
   };
 
@@ -224,10 +241,10 @@ export default function App() {
     }
   };
 
-  const handleMarkZero = () => {
-    const updated = markDayAsNoExpense(currentMonthKey);
+  const handleMarkZeroForDay = (dateStr) => {
+    const updated = markDayAsNoExpense(currentMonthKey, dateStr);
     setMonthData(updated);
-    alert('Đã ghi nhận! 🎉 Hôm nay bạn không tiêu gì. App sẽ không gửi thông báo nhắc lúc 18h00.');
+    alert(`Đã ghi nhận! 🎉 Ngày ${formatDisplayDate(dateStr)} không có chi tiêu.`);
   };
 
   const openEditSetup = () => {
@@ -245,7 +262,23 @@ export default function App() {
     setShowHistoryModal(true);
   };
 
-  // Calculations
+  // Date Navigation
+  const todayStr = getTodayDateString();
+  const isSelectedDateToday = selectedDate === todayStr;
+
+  const handlePrevDay = () => {
+    setSelectedDate(addDays(selectedDate, -1));
+  };
+
+  const handleNextDay = () => {
+    setSelectedDate(addDays(selectedDate, 1));
+  };
+
+  const handleJumpToToday = () => {
+    setSelectedDate(todayStr);
+  };
+
+  // Calculations for dashboard
   const budget = monthData?.budget || 0;
   const fixedExpenses = monthData?.fixedExpenses || [];
   const dailyExpenses = monthData?.dailyExpenses || [];
@@ -255,14 +288,23 @@ export default function App() {
   const fixedTotal = fixedExpenses.reduce((s, it) => s + (Number(it.amount) || 0), 0);
   const flexibleTotal = dailyExpenses.reduce((s, it) => s + (Number(it.amount) || 0), 0);
 
-  const todayStr = getTodayDateString();
-  const todayExpenses = dailyExpenses.filter((e) => e.date === todayStr);
-  const todayTotal = todayExpenses.reduce((s, it) => s + (Number(it.amount) || 0), 0);
-  const isZeroToday = noExpenseDays.includes(todayStr);
+  // Selected date spending
+  const selectedDateExpenses = dailyExpenses.filter((e) => e.date === selectedDate);
+  const selectedDateTotal = selectedDateExpenses.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+  const isZeroOnSelectedDate = noExpenseDays.includes(selectedDate);
 
   const totalSpent = fixedPaid + flexibleTotal;
   const remaining = budget - totalSpent;
   const spentPercent = budget > 0 ? Math.min(Math.round((totalSpent / budget) * 100), 100) : 0;
+
+  // Group all expenses by date for 'all' tab
+  const groupedAllExpenses = dailyExpenses.reduce((acc, item) => {
+    const d = item.date || 'Khác';
+    if (!acc[d]) acc[d] = [];
+    acc[d].push(item);
+    return acc;
+  }, {});
+  const sortedDates = Object.keys(groupedAllExpenses).sort().reverse();
 
   const getCatIcon = (iconName, color = '#10B981', size = 18) => {
     switch (iconName) {
@@ -370,7 +412,7 @@ export default function App() {
               </div>
               <div className="cat-val">{formatCurrency(flexibleTotal)}</div>
               <div className="cat-desc">
-                Hôm nay: <strong style={{ color: '#10B981' }}>{formatCurrency(todayTotal)}</strong>
+                Ngày chọn: <strong style={{ color: '#10B981' }}>{formatCurrency(selectedDateTotal)}</strong>
               </div>
             </div>
           </div>
@@ -423,7 +465,7 @@ export default function App() {
           )}
         </div>
 
-        {/* Card 3: Chi Tiêu Linh Động */}
+        {/* Card 3: Chi Tiêu Linh Động & Xem Theo Ngày Bất Kỳ */}
         <div className="card">
           <div className="daily-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -435,10 +477,10 @@ export default function App() {
 
             <div className="tab-switcher">
               <button
-                className={`tab-btn ${activeTab === 'today' ? 'active' : ''}`}
-                onClick={() => setActiveTab('today')}
+                className={`tab-btn ${activeTab === 'day' ? 'active' : ''}`}
+                onClick={() => setActiveTab('day')}
               >
-                Hôm nay
+                Theo ngày
               </button>
               <button
                 className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
@@ -449,84 +491,178 @@ export default function App() {
             </div>
           </div>
 
-          {activeTab === 'today' ? (
-            todayExpenses.length === 0 ? (
-              isZeroToday ? (
-                <div className="banner-success">
-                  <Sparkles size={26} color="#10B981" style={{ margin: '0 auto' }} />
-                  <div className="banner-success-title">Hôm nay bạn không tiêu gì! 🎉</div>
-                  <div className="banner-success-sub">Tuyệt vời! App sẽ không làm phiền bạn lúc 18h00 hôm nay.</div>
-                  <button
-                    style={{ background: 'transparent', border: 'none', color: '#059669', fontSize: '12px', fontWeight: '600', marginTop: '10px', textDecoration: 'underline', cursor: 'pointer' }}
-                    onClick={() => setShowAddModal(true)}
-                  >
-                    + Nếu có phát sinh khoản chi, bấm vào đây
-                  </button>
-                </div>
-              ) : (
-                <div className="banner-warning">
-                  <AlertCircle size={26} color="#F59E0B" style={{ margin: '0 auto' }} />
-                  <div className="banner-warning-title">Hôm nay bạn chưa nhập chi tiêu!</div>
-                  <div className="banner-warning-sub">(Đúng 18h00 app sẽ thông báo nhắc nhở nếu chưa nhập)</div>
-                  <div className="banner-btns">
-                    <button className="btn-primary" onClick={() => setShowAddModal(true)}>
-                      <Plus size={16} /> Nhập chi tiêu ngay
-                    </button>
-                    <button className="btn-secondary" onClick={handleMarkZero}>
-                      Hôm nay ko tiêu
-                    </button>
-                  </div>
-                </div>
-              )
-            ) : (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#F8FAFC', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', marginBottom: '8px' }}>
-                  <span style={{ color: '#64748B' }}>Tổng chi hôm nay:</span>
-                  <span style={{ fontWeight: '700', color: '#0F172A' }}>{formatCurrency(todayTotal)}</span>
+          {activeTab === 'day' ? (
+            <div>
+              {/* THANH ĐIỀU HƯỚNG & CHỌN NGÀY BẤT KỲ */}
+              <div className="date-navigator">
+                <button className="date-nav-btn" onClick={handlePrevDay} title="Ngày trước">
+                  <ChevronLeft size={20} />
+                </button>
+
+                <div className="date-display-btn">
+                  <Calendar size={16} color="#10B981" />
+                  <span>{formatDateFullVietnamese(selectedDate)}</span>
+                  {/* Native date picker input overlay */}
+                  <input
+                    type="date"
+                    className="hidden-date-picker"
+                    value={selectedDate}
+                    onChange={(e) => {
+                      if (e.target.value) setSelectedDate(e.target.value);
+                    }}
+                  />
                 </div>
 
-                {todayExpenses.map((item) => {
-                  const cat = FLEXIBLE_CATEGORIES.find((c) => c.id === item.categoryId) || FLEXIBLE_CATEGORIES[4];
-                  return (
-                    <div key={item.id} className="expense-row">
-                      <div className="cat-icon-badge" style={{ backgroundColor: cat.bgColor }}>
-                        {getCatIcon(cat.icon, cat.color)}
-                      </div>
-                      <div className="expense-info">
-                        <div className="expense-name">{item.categoryName}</div>
-                        <div className="expense-meta">{item.time} • {item.note || 'Không có ghi chú'}</div>
-                      </div>
-                      <div className="expense-amt">-{formatCurrency(item.amount)}</div>
-                      <button className="trash-btn" onClick={() => handleDeleteDaily(item.id)}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  );
-                })}
+                <button className="date-nav-btn" onClick={handleNextDay} title="Ngày sau">
+                  <ChevronRight size={20} />
+                </button>
+
+                {!isSelectedDateToday && (
+                  <button className="today-jump-btn" onClick={handleJumpToToday}>
+                    Hôm nay
+                  </button>
+                )}
               </div>
-            )
+
+              {/* TỔNG CHI TIÊU CỦA NGÀY ĐANG CHỌN */}
+              <div className="day-subtotal-box">
+                <span className="day-subtotal-label">Tổng chi ngày {formatDisplayDate(selectedDate)}:</span>
+                <span className="day-subtotal-val" style={{ color: selectedDateTotal > 0 ? '#EF4444' : '#10B981' }}>
+                  {formatCurrency(selectedDateTotal)}
+                </span>
+              </div>
+
+              {/* DANH SÁCH CHI TIÊU CỦA NGÀY NÀY */}
+              {selectedDateExpenses.length === 0 ? (
+                isZeroOnSelectedDate ? (
+                  <div className="banner-success">
+                    <Sparkles size={26} color="#10B981" style={{ margin: '0 auto' }} />
+                    <div className="banner-success-title">
+                      {isSelectedDateToday ? 'Hôm nay bạn không tiêu gì! 🎉' : `Ngày ${formatDisplayDate(selectedDate)} không tiêu gì! 🎉`}
+                    </div>
+                    <div className="banner-success-sub">
+                      {isSelectedDateToday ? 'Tuyệt vời! App sẽ không nhắc bạn lúc 18h00.' : 'Đã được ghi nhận tiết kiệm 100%.'}
+                    </div>
+                    <button
+                      style={{ background: 'transparent', border: 'none', color: '#059669', fontSize: '12px', fontWeight: '600', marginTop: '10px', textDecoration: 'underline', cursor: 'pointer' }}
+                      onClick={() => handleOpenAddForDate(selectedDate)}
+                    >
+                      + Nếu có phát sinh khoản chi, bấm vào đây để ghi
+                    </button>
+                  </div>
+                ) : (
+                  <div className={isSelectedDateToday ? 'banner-warning' : 'empty-day-box'}>
+                    {isSelectedDateToday ? (
+                      <>
+                        <AlertCircle size={26} color="#F59E0B" style={{ margin: '0 auto' }} />
+                        <div className="banner-warning-title">Hôm nay bạn chưa nhập chi tiêu!</div>
+                        <div className="banner-warning-sub">(Đúng 18h00 app sẽ thông báo nhắc nhở nếu chưa nhập)</div>
+                        <div className="banner-btns">
+                          <button className="btn-primary" onClick={() => handleOpenAddForDate(selectedDate)}>
+                            <Plus size={16} /> Nhập chi tiêu ngay
+                          </button>
+                          <button className="btn-secondary" onClick={() => handleMarkZeroForDay(selectedDate)}>
+                            Hôm nay ko tiêu
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="empty-day-text">Chưa ghi nhận khoản chi nào trong ngày này.</div>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                          <button className="btn-primary" style={{ padding: '8px 14px' }} onClick={() => handleOpenAddForDate(selectedDate)}>
+                            <Plus size={16} /> + Ghi chi tiêu cho ngày này
+                          </button>
+                          <button className="btn-secondary" style={{ padding: '8px 14px' }} onClick={() => handleMarkZeroForDay(selectedDate)}>
+                            Đánh dấu ko tiêu
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              ) : (
+                <div>
+                  {selectedDateExpenses.map((item) => {
+                    const cat = FLEXIBLE_CATEGORIES.find((c) => c.id === item.categoryId) || FLEXIBLE_CATEGORIES[4];
+                    return (
+                      <div key={item.id} className="expense-row">
+                        <div className="cat-icon-badge" style={{ backgroundColor: cat.bgColor }}>
+                          {getCatIcon(cat.icon, cat.color)}
+                        </div>
+                        <div className="expense-info">
+                          <div className="expense-name">{item.categoryName}</div>
+                          <div className="expense-meta">{item.time} • {item.note || 'Không có ghi chú'}</div>
+                        </div>
+                        <div className="expense-amt">-{formatCurrency(item.amount)}</div>
+                        <button className="trash-btn" onClick={() => handleDeleteDaily(item.id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  <button
+                    className="manage-btn"
+                    style={{ marginTop: '14px', backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', color: '#065F46' }}
+                    onClick={() => handleOpenAddForDate(selectedDate)}
+                  >
+                    <Plus size={16} /> Thêm khoản chi khác cho ngày {formatDisplayDate(selectedDate)}
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
+            /* TAB CẢ THÁNG (GOM THEO TỪNG NGÀY) */
             <div>
-              {dailyExpenses.length === 0 ? (
+              {sortedDates.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#94A3B8', fontSize: '13px', padding: '24px 0' }}>
                   Chưa có khoản chi linh động nào trong tháng.
                 </div>
               ) : (
-                dailyExpenses.map((item) => {
-                  const cat = FLEXIBLE_CATEGORIES.find((c) => c.id === item.categoryId) || FLEXIBLE_CATEGORIES[4];
+                sortedDates.map((dStr) => {
+                  const dayItems = groupedAllExpenses[dStr] || [];
+                  const daySum = dayItems.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+
                   return (
-                    <div key={item.id} className="expense-row">
-                      <div className="cat-icon-badge" style={{ backgroundColor: cat.bgColor }}>
-                        {getCatIcon(cat.icon, cat.color)}
+                    <div key={dStr} className="date-group-card">
+                      <div
+                        className="date-group-header"
+                        onClick={() => {
+                          setSelectedDate(dStr);
+                          setActiveTab('day');
+                        }}
+                        style={{ cursor: 'pointer' }}
+                        title="Bấm để xem chi tiết ngày này"
+                      >
+                        <div className="date-group-title">
+                          📅 {formatDateFullVietnamese(dStr)}
+                        </div>
+                        <div className="date-group-total">
+                          -{formatCurrency(daySum)}
+                        </div>
                       </div>
-                      <div className="expense-info">
-                        <div className="expense-name">{item.categoryName}</div>
-                        <div className="expense-meta">{formatDisplayDate(item.date)} {item.time} • {item.note || 'Không ghi chú'}</div>
+
+                      <div className="date-group-content">
+                        {dayItems.map((item) => {
+                          const cat = FLEXIBLE_CATEGORIES.find((c) => c.id === item.categoryId) || FLEXIBLE_CATEGORIES[4];
+                          return (
+                            <div key={item.id} className="expense-row">
+                              <div className="cat-icon-badge" style={{ backgroundColor: cat.bgColor }}>
+                                {getCatIcon(cat.icon, cat.color, 16)}
+                              </div>
+                              <div className="expense-info">
+                                <div className="expense-name" style={{ fontSize: '13px' }}>{item.categoryName}</div>
+                                <div className="expense-meta">{item.time} • {item.note || 'Không ghi chú'}</div>
+                              </div>
+                              <div className="expense-amt" style={{ fontSize: '13px' }}>-{formatCurrency(item.amount)}</div>
+                              <button className="trash-btn" onClick={() => handleDeleteDaily(item.id)}>
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className="expense-amt">-{formatCurrency(item.amount)}</div>
-                      <button className="trash-btn" onClick={() => handleDeleteDaily(item.id)}>
-                        <Trash2 size={16} />
-                      </button>
                     </div>
                   );
                 })
@@ -537,11 +673,11 @@ export default function App() {
       </main>
 
       {/* Floating Action Button */}
-      <button className="fab-btn" onClick={() => setShowAddModal(true)} title="Nhập chi tiêu">
+      <button className="fab-btn" onClick={() => handleOpenAddForDate(selectedDate)} title="Nhập chi tiêu">
         <Plus size={32} />
       </button>
 
-      {/* Modal: Nhập Chi Tiêu Linh Động */}
+      {/* MODAL: NHẬP CHI TIÊU LINH ĐỘNG (CỔNG ĐIỀN NỀN TRẮNG SÁCH TINH) */}
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
@@ -552,6 +688,18 @@ export default function App() {
               </button>
             </div>
 
+            {/* Chọn ngày chi */}
+            <div className="input-group">
+              <label className="input-label">Ngày chi tiêu</label>
+              <input
+                type="date"
+                className="text-input"
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
+              />
+            </div>
+
+            {/* Ô điền số tiền màu trắng */}
             <div className="input-group">
               <label className="input-label">Số tiền chi (VNĐ)</label>
               <div className="amount-input-box">
@@ -567,6 +715,7 @@ export default function App() {
               </div>
             </div>
 
+            {/* Các phím số nhanh màu trắng */}
             <div className="quick-pills">
               {QUICK_AMOUNTS.map((q) => (
                 <button
@@ -582,6 +731,7 @@ export default function App() {
               ))}
             </div>
 
+            {/* Danh mục */}
             <div className="input-group">
               <label className="input-label">Chọn danh mục</label>
               <div className="categories-grid">
@@ -605,6 +755,7 @@ export default function App() {
               </div>
             </div>
 
+            {/* Ghi chú ô nền trắng */}
             <div className="input-group">
               <label className="input-label">Ghi chú (Tùy chọn)</label>
               <input
@@ -624,7 +775,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal: Bắt Buộc Thiết Lập Tháng / Chỉnh Sửa Ngân Sách */}
+      {/* MODAL: THIẾT LẬP THÁNG / CHỈNH SỬA NGÂN SÁCH (CỔNG ĐIỀN NỀN TRẮNG) */}
       {showSetupModal && (
         <div className="modal-fullscreen">
           <div className="modal-header">
@@ -699,7 +850,7 @@ export default function App() {
                 {DEFAULT_FIXED_PRESETS.map((p) => (
                   <button
                     key={p.id}
-                    style={{ backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0', padding: '5px 10px', borderRadius: '14px', fontSize: '12px', color: '#334155', cursor: 'pointer' }}
+                    style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', padding: '6px 12px', borderRadius: '14px', fontSize: '12px', fontWeight: '600', color: '#334155', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
                     onClick={() => {
                       if (setupFixedList.some((f) => f.name.toLowerCase() === p.name.toLowerCase())) {
                         alert('Khoản này đã có!');
@@ -714,16 +865,16 @@ export default function App() {
               </div>
 
               {setupFixedList.length > 0 && (
-                <div style={{ backgroundColor: '#F8FAFC', borderRadius: '10px', padding: '10px' }}>
+                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '10px' }}>
                   {setupFixedList.map((item) => (
-                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid #E2E8F0' }}>
+                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: '1px solid #F1F5F9' }}>
                       <span style={{ flex: 1.2, fontSize: '13px', fontWeight: '600', color: '#1E293B' }}>{item.name}</span>
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '4px 8px' }}>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', backgroundColor: '#FFFFFF', border: '1.5px solid #CBD5E1', borderRadius: '8px', padding: '6px 10px' }}>
                         <input
                           type="text"
                           inputMode="numeric"
                           placeholder="Số tiền"
-                          style={{ width: '100%', border: 'none', outline: 'none', fontSize: '13px', fontWeight: '700' }}
+                          style={{ width: '100%', border: 'none', outline: 'none', fontSize: '13px', fontWeight: '700', backgroundColor: '#FFFFFF' }}
                           value={item.amount ? formatNumberInput(item.amount) : ''}
                           onChange={(e) => {
                             const val = parseNumber(e.target.value);
@@ -795,7 +946,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal: Lịch Sử Các Tháng */}
+      {/* MODAL: LỊCH SỬ CÁC THÁNG */}
       {showHistoryModal && (
         <div className="modal-fullscreen">
           <div className="modal-header">
@@ -813,8 +964,9 @@ export default function App() {
                   padding: '6px 14px',
                   borderRadius: '16px',
                   border: 'none',
-                  backgroundColor: mKey === selectedHistoryMonth ? '#10B981' : '#F1F5F9',
+                  backgroundColor: mKey === selectedHistoryMonth ? '#10B981' : '#FFFFFF',
                   color: mKey === selectedHistoryMonth ? '#FFFFFF' : '#475569',
+                  border: mKey === selectedHistoryMonth ? 'none' : '1px solid #CBD5E1',
                   fontWeight: '600',
                   fontSize: '13px',
                   cursor: 'pointer',
@@ -838,11 +990,11 @@ export default function App() {
                     {formatMonthTitle(selectedHistoryMonth)}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div style={{ backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '8px' }}>
+                    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', padding: '10px', borderRadius: '8px' }}>
                       <div style={{ fontSize: '11px', color: '#64748B' }}>Ngân sách</div>
                       <div style={{ fontSize: '14px', fontWeight: '700' }}>{formatCurrency(historyDetails.budget)}</div>
                     </div>
-                    <div style={{ backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '8px' }}>
+                    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', padding: '10px', borderRadius: '8px' }}>
                       <div style={{ fontSize: '11px', color: '#64748B' }}>Tổng đã chi</div>
                       <div style={{ fontSize: '14px', fontWeight: '700', color: '#EF4444' }}>
                         {formatCurrency(
@@ -889,7 +1041,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal: Cài Đặt */}
+      {/* MODAL: CÀI ĐẶT */}
       {showSettingsModal && (
         <div className="modal-fullscreen">
           <div className="modal-header">
@@ -921,7 +1073,7 @@ export default function App() {
               </div>
 
               <button
-                style={{ width: '100%', marginTop: '14px', padding: '10px', backgroundColor: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+                style={{ width: '100%', marginTop: '14px', padding: '10px', backgroundColor: '#FFFFFF', color: '#065F46', border: '1.5px solid #10B981', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
                 onClick={testNotification}
               >
                 🔔 Thử gửi thông báo ngay bây giờ
@@ -933,7 +1085,7 @@ export default function App() {
             </div>
 
             <button
-              style={{ width: '100%', padding: '12px', backgroundColor: '#FEE2E2', color: '#B91C1C', border: '1px solid #FECACA', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', marginTop: '10px' }}
+              style={{ width: '100%', padding: '12px', backgroundColor: '#FFFFFF', color: '#B91C1C', border: '1.5px solid #FECACA', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', marginTop: '10px' }}
               onClick={() => {
                 if (confirm('⚠️ Bạn có chắc muốn xóa toàn bộ dữ liệu ứng dụng?')) {
                   localStorage.clear();

@@ -5,11 +5,12 @@
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  color-scheme: light !important;
 }
 
 body {
-  background-color: #F8FAFC;
-  color: #1E293B;
+  background-color: #F8FAFC !important;
+  color: #1E293B !important;
   display: flex;
   justify-content: center;
   min-height: 100vh;
@@ -18,12 +19,19 @@ body {
 #root {
   width: 100%;
   max-width: 480px;
-  background-color: #F8FAFC;
+  background-color: #F8FAFC !important;
   min-height: 100vh;
   position: relative;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
+}
+
+/* Force ALL Inputs to be Pure White */
+input, textarea, select {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  color-scheme: light !important;
 }
 
 /* App Header */
@@ -62,18 +70,19 @@ body {
   width: 38px;
   height: 38px;
   border-radius: 19px;
-  background-color: #F1F5F9;
-  border: none;
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #334155;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .icon-btn:hover {
-  background-color: #E2E8F0;
+  background-color: #F8FAFC !important;
 }
 
 /* Install Banner */
@@ -128,7 +137,7 @@ body {
   background-color: #FFFFFF;
   border-radius: 16px;
   padding: 16px;
-  border: 1px solid #F1F5F9;
+  border: 1px solid #E2E8F0;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
 
@@ -183,7 +192,8 @@ body {
 
 .category-summary-box {
   display: flex;
-  background-color: #F8FAFC;
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
   border-radius: 12px;
   padding: 12px;
   margin-top: 14px;
@@ -302,8 +312,8 @@ body {
   justify-content: center;
   gap: 6px;
   padding: 10px;
-  background-color: #F1F5F9;
-  border: none;
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
@@ -312,12 +322,16 @@ body {
   cursor: pointer;
 }
 
-/* Daily Expenses */
+.manage-btn:hover {
+  background-color: #F8FAFC;
+}
+
+/* Daily Expenses Section */
 .daily-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .tab-switcher {
@@ -330,7 +344,7 @@ body {
 .tab-btn {
   border: none;
   background: transparent;
-  padding: 5px 10px;
+  padding: 6px 12px;
   font-size: 12px;
   font-weight: 600;
   color: #64748B;
@@ -339,14 +353,106 @@ body {
 }
 
 .tab-btn.active {
-  background-color: #FFFFFF;
-  color: #0F172A;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
+/* Date Navigator Bar */
+.date-navigator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 6px 8px;
+  margin-bottom: 14px;
+}
+
+.date-nav-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background-color: #F8FAFC !important;
+  border: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #334155;
+  cursor: pointer;
+}
+
+.date-nav-btn:hover {
+  background-color: #F1F5F9 !important;
+}
+
+.date-display-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #FFFFFF;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  position: relative;
+}
+
+.hidden-date-picker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.today-jump-btn {
+  background-color: #ECFDF5;
+  color: #065F46;
+  border: 1px solid #A7F3D0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Day Subtotal Box */
+.day-subtotal-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.day-subtotal-label {
+  color: #64748B;
+  font-weight: 600;
+}
+
+.day-subtotal-val {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+/* Banners */
 .banner-warning {
   background-color: #FFFBEB;
-  border: 1px solid #FEF3C7;
+  border: 1.5px solid #FEF3C7;
   border-radius: 12px;
   padding: 16px;
   text-align: center;
@@ -392,9 +498,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background-color: #E2E8F0;
-  color: #334155;
-  border: none;
+  background-color: #FFFFFF !important;
+  color: #334155 !important;
+  border: 1px solid #CBD5E1;
   padding: 10px;
   border-radius: 8px;
   font-size: 12px;
@@ -404,7 +510,7 @@ body {
 
 .banner-success {
   background-color: #ECFDF5;
-  border: 1px solid #A7F3D0;
+  border: 1.5px solid #A7F3D0;
   border-radius: 12px;
   padding: 16px;
   text-align: center;
@@ -421,6 +527,20 @@ body {
   font-size: 12px;
   margin-top: 2px;
   color: #047857;
+}
+
+.empty-day-box {
+  background-color: #FFFFFF;
+  border: 1.5px dashed #CBD5E1;
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.empty-day-text {
+  font-size: 13px;
+  color: #64748B;
+  margin-bottom: 12px;
 }
 
 .expense-row {
@@ -521,7 +641,7 @@ body {
 }
 
 .modal-sheet {
-  background-color: #FFFFFF;
+  background-color: #FFFFFF !important;
   width: 100%;
   max-width: 480px;
   border-top-left-radius: 24px;
@@ -540,7 +660,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #F8FAFC;
+  background-color: #F8FAFC !important;
   z-index: 60;
   display: flex;
   flex-direction: column;
@@ -554,7 +674,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background-color: #FFFFFF;
+  background-color: #FFFFFF !important;
   border-bottom: 1px solid #E2E8F0;
 }
 
@@ -572,7 +692,7 @@ body {
   padding: 4px;
 }
 
-/* Input Fields */
+/* PURE WHITE INPUT FIELDS */
 .input-group {
   margin-top: 14px;
 }
@@ -588,19 +708,20 @@ body {
 .amount-input-box {
   display: flex;
   align-items: center;
-  background-color: #F8FAFC;
-  border: 1.5px solid #CBD5E1;
+  background-color: #FFFFFF !important;
+  border: 2px solid #CBD5E1;
   border-radius: 14px;
   padding: 10px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .amount-input-box input {
   flex: 1;
   font-size: 28px;
   font-weight: 800;
-  color: #0F172A;
+  color: #0F172A !important;
+  background-color: #FFFFFF !important;
   border: none;
-  background: transparent;
   outline: none;
   text-align: center;
 }
@@ -619,18 +740,19 @@ body {
 }
 
 .quick-pill {
-  background-color: #F1F5F9;
-  border: none;
+  background-color: #FFFFFF !important;
+  border: 1px solid #CBD5E1;
   border-radius: 8px;
   padding: 8px;
   font-size: 13px;
-  font-weight: 600;
-  color: #334155;
+  font-weight: 700;
+  color: #334155 !important;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .quick-pill:hover {
-  background-color: #E2E8F0;
+  background-color: #F1F5F9 !important;
 }
 
 .categories-grid {
@@ -647,24 +769,26 @@ body {
   padding: 10px;
   border: 1.5px solid #E2E8F0;
   border-radius: 12px;
-  background-color: #FFFFFF;
+  background-color: #FFFFFF !important;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .category-choice.selected {
   border-color: #10B981;
-  background-color: #ECFDF5;
+  background-color: #ECFDF5 !important;
 }
 
 .text-input {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid #CBD5E1;
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1.5px solid #CBD5E1;
   border-radius: 10px;
   font-size: 14px;
-  color: #0F172A;
   outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .text-input:focus {
@@ -686,4 +810,39 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Date grouping in All tab */
+.date-group-card {
+  margin-bottom: 12px;
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.date-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #F8FAFC;
+  padding: 10px 14px;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.date-group-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1E293B;
+}
+
+.date-group-total {
+  font-size: 13px;
+  font-weight: 800;
+  color: #EF4444;
+}
+
+.date-group-content {
+  padding: 0 14px;
 }
