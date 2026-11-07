@@ -53,6 +53,7 @@ import {
   hasUserLoggedToday,
   getPreviousMonthPreset,
   getAllMonthKeys,
+  getAvailableMonths,
   getSettings,
   saveSettings,
 } from './storage';
@@ -75,6 +76,7 @@ export default function App() {
   const [showInstallBanner, setShowInstallBanner] = useState(false);
 
   // Modals
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [isMandatorySetup, setIsMandatorySetup] = useState(false);
@@ -247,6 +249,34 @@ export default function App() {
     alert(`Đã ghi nhận! 🎉 Ngày ${formatDisplayDate(dateStr)} không có chi tiêu.`);
   };
 
+  const handleSwitchMonth = (targetMonthKey) => {
+    setCurrentMonthKey(targetMonthKey);
+    const data = getMonthData(targetMonthKey);
+
+    if (!data || !data.setupCompleted) {
+      // Month not setup yet, offer setup
+      const prevData = getPreviousMonthPreset(targetMonthKey);
+      setPreviousMonthData(prevData);
+      setMonthData(null);
+      setIsMandatorySetup(false);
+      setSetupBudgetStr('');
+      setSetupFixedList([]);
+      setShowMonthPicker(false);
+      setShowSetupModal(true);
+    } else {
+      setMonthData(data);
+      setShowMonthPicker(false);
+    }
+
+    // Set selected date inside the selected month
+    const realToday = getTodayDateString();
+    if (targetMonthKey === getMonthKey()) {
+      setSelectedDate(realToday);
+    } else {
+      setSelectedDate(`${targetMonthKey}-01`);
+    }
+  };
+
   const openEditSetup = () => {
     setSetupBudgetStr(formatNumberInput(monthData?.budget || 0));
     setSetupFixedList(monthData?.fixedExpenses || []);
@@ -325,9 +355,10 @@ export default function App() {
     <div className="app-container">
       {/* Top Header */}
       <header className="app-header">
-        <button className="month-badge" onClick={openEditSetup}>
+        <button className="month-badge" onClick={() => setShowMonthPicker(true)} title="Chạm để chọn tháng">
           <Calendar size={16} />
           <span>{formatMonthTitle(currentMonthKey)}</span>
+          <ChevronDown size={14} style={{ opacity: 0.7, marginLeft: 2 }} />
         </button>
 
         <div className="header-actions">
@@ -662,6 +693,113 @@ export default function App() {
       <button className="fab-btn" onClick={() => handleOpenAddForDate(selectedDate)} title="Nhập chi tiêu">
         <Plus size={32} />
       </button>
+
+      {/* MODAL: CHỌN THÁNG QUẢN LÝ */}
+      {showMonthPicker && (
+        <div className="modal-overlay" onClick={() => setShowMonthPicker(false)}>
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A' }}>📅 Chọn Tháng Quản Lý</span>
+              <button className="modal-close-btn" onClick={() => setShowMonthPicker(false)}>
+                <X size={22} />
+              </button>
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '14px' }}>
+              Chọn tháng để xem trang chủ và lịch sử chi tiêu của tháng đó
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '50vh', overflowY: 'auto' }}>
+              {getAvailableMonths().map((mKey) => {
+                const mData = getMonthData(mKey);
+                const isCurrent = mKey === currentMonthKey;
+                const isRealTodayMonth = mKey === getMonthKey();
+
+                const mBudget = mData?.budget || 0;
+                const mFixed = (mData?.fixedExpenses || []).filter((f) => f.paid).reduce((s, it) => s + (Number(it.amount) || 0), 0);
+                const mFlex = (mData?.dailyExpenses || []).reduce((s, it) => s + (Number(it.amount) || 0), 0);
+                const mTotalSpent = mFixed + mFlex;
+
+                return (
+                  <div
+                    key={mKey}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: isCurrent ? '2px solid #10B981' : '1px solid #E2E8F0',
+                      backgroundColor: isCurrent ? '#ECFDF5' : '#FFFFFF',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => handleSwitchMonth(mKey)}
+                  >
+                    <div>
+                      <div style={{ fontSize: '15px', fontWeight: '700', color: isCurrent ? '#065F46' : '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>{formatMonthTitle(mKey)}</span>
+                        {isRealTodayMonth && (
+                          <span style={{ fontSize: '10px', backgroundColor: '#10B981', color: '#FFFFFF', padding: '2px 6px', borderRadius: '8px' }}>
+                            Tháng này
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748B', marginTop: '3px' }}>
+                        {mData && mData.setupCompleted ? (
+                          <span>Ngân sách: {formatCurrency(mBudget)} • Đã chi: <strong style={{ color: '#EF4444' }}>{formatCurrency(mTotalSpent)}</strong></span>
+                        ) : (
+                          <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>Chưa thiết lập (Chạm để mở tháng này)</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {isCurrent && <CheckCircle size={20} color="#10B981" />}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Chọn tháng khác từ lịch input type month */}
+            <div style={{ marginTop: '14px', position: 'relative' }}>
+              <button
+                className="btn-secondary"
+                style={{ width: '100%', position: 'relative', overflow: 'hidden' }}
+              >
+                <Calendar size={16} />
+                <span>+ Chọn tháng khác từ lịch</span>
+                <input
+                  type="month"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer',
+                  }}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleSwitchMonth(e.target.value);
+                    }
+                  }}
+                />
+              </button>
+            </div>
+
+            {/* Nút chỉnh sửa ngân sách tháng đang chọn */}
+            <button
+              className="manage-btn"
+              style={{ marginTop: '10px' }}
+              onClick={() => {
+                setShowMonthPicker(false);
+                openEditSetup();
+              }}
+            >
+              <span>✏️ Chỉnh sửa ngân sách & cố định ({formatMonthTitle(currentMonthKey)})</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: NHẬP CHI TIÊU LINH ĐỘNG (CỔNG ĐIỀN NỀN TRẮNG SÁCH TINH) */}
       {showAddModal && (

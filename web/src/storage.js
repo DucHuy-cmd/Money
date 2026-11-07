@@ -1,4 +1,4 @@
-import { getTodayDateString, getPreviousMonthKey } from './utils';
+import { getTodayDateString, getPreviousMonthKey, getMonthKey } from './utils';
 
 const PREFIX_MONTH = '@month_data_';
 const KEY_MONTHS_LIST = '@months_list';
@@ -19,6 +19,16 @@ export const getAllMonthKeys = () => {
   } catch (e) {
     return [];
   }
+};
+
+export const getAvailableMonths = () => {
+  const tracked = getAllMonthKeys();
+  const todayKey = getMonthKey();
+  const prevKey = getPreviousMonthKey(todayKey);
+  const prev2Key = getPreviousMonthKey(prevKey);
+
+  const set = new Set([todayKey, prevKey, prev2Key, ...tracked]);
+  return Array.from(set).sort().reverse();
 };
 
 const registerMonthKey = (monthKey) => {
