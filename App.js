@@ -44,6 +44,7 @@ import AddExpenseModal from './src/components/AddExpenseModal';
 import MonthSetupModal from './src/components/MonthSetupModal';
 import MonthHistoryModal from './src/components/MonthHistoryModal';
 import SettingsModal from './src/components/SettingsModal';
+import { refreshHomeWidget } from './src/widgets/updateWidget';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -109,6 +110,24 @@ export default function App() {
   useEffect(() => {
     loadAppData();
   }, [loadAppData]);
+
+  // Sync widget with current data
+  useEffect(() => {
+    if (monthData) {
+      const todayStr = getTodayDateString();
+      const todayExp = (monthData.dailyExpenses || []).filter((e) => e.date === todayStr);
+      const todaySpent = todayExp.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+
+      const fixedPaid = (monthData.fixedExpenses || [])
+        .filter((f) => f.paid)
+        .reduce((s, it) => s + (Number(it.amount) || 0), 0);
+      const flexibleTotal = (monthData.dailyExpenses || []).reduce((s, it) => s + (Number(it.amount) || 0), 0);
+      const totalSpent = fixedPaid + flexibleTotal;
+      const remaining = (Number(monthData.budget) || 0) - totalSpent;
+
+      refreshHomeWidget({ todaySpent, remaining });
+    }
+  }, [monthData]);
 
   // Handle saving month setup
   const handleSaveMonthSetup = async ({ budget, fixedExpenses }) => {

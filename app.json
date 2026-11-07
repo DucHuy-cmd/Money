@@ -30,6 +30,24 @@
           "color": "#10B981",
           "sounds": []
         }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "MoneyBarWidget",
+              "label": "Thanh Chi Tiêu (Dài)",
+              "minWidth": "320dp",
+              "minHeight": "50dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 1,
+              "description": "Hiển thị số tiền đã tiêu hôm nay và nút nhập nhanh",
+              "previewImage": "./assets/icon.png",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
       ]
     ]
   }
